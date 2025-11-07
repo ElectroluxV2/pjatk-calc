@@ -123,6 +123,11 @@
             margin-bottom: 8px;
         }
 
+        #timer {
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
+
         .buttons {
             display: flex;
             flex-direction: column;
@@ -218,6 +223,7 @@
 
         <div class="summary">
             <p class="total" id="totalScore">Suma punktów: 0 / 25</p>
+            <p id="timer">Czas od ostatniego resetu: 00:00</p>
             <div class="buttons">
                 <button id="copyHtml">📋 Kopiuj raport (Teams)</button>
                 <button id="resetForm">🔄 Resetuj formularz</button>
@@ -302,16 +308,42 @@
             .catch(() => alert("❌ Nie udało się skopiować."));
     });
 
-    // Reset formularza
+    // Licznik czasu (tylko minuty i sekundy, lokalny format)
+    const timerEl = document.getElementById("timer");
+    let timerStartTime = null;
+    let timerInterval = null;
+
+    function updateTimerDisplay() {
+        if (!timerStartTime) return;
+
+        const elapsedMs = Date.now() - timerStartTime;
+        const elapsedDate = new Date(elapsedMs);
+        const formatted = elapsedDate.toLocaleTimeString(undefined, {
+            timeZone: "UTC",
+            minute: "2-digit",
+            second: "2-digit",
+        });
+        timerEl.textContent = `Czas od ostatniego resetu: ${formatted}`;
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timerStartTime = Date.now();
+        updateTimerDisplay();
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    // Reset formularza + restart zegara
     resetBtn.addEventListener("click", () => {
         if (confirm("Czy na pewno chcesz zresetować formularz?")) {
             allBoxes.forEach(cb => (cb.checked = false));
             updateLiveScore();
             unsavedChanges = false;
+            startTimer(); // reset zegara
         }
     });
 
-    // Ostrzeżenie przy zamknięciu okna
+    // Ostrzeżenie przy zamknięciu
     let unsavedChanges = false;
     window.addEventListener("beforeunload", e => {
         if (unsavedChanges) {
@@ -320,6 +352,8 @@
         }
     });
 
+    // Start wszystkiego
+    startTimer();
     updateLiveScore();
 </script>
 </body>

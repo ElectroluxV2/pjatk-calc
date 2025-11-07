@@ -34,7 +34,6 @@
             gap: 20px;
         }
 
-        /* LEWA STRONA */
         .table-wrapper {
             flex: 3;
             display: flex;
@@ -78,7 +77,6 @@
             margin-right: 6px;
         }
 
-        /* PRAWA STRONA */
         .side-panel {
             flex: 1;
             display: flex;
@@ -87,8 +85,7 @@
             gap: 14px;
         }
 
-        .penalty-section,
-        .summary {
+        .penalty-section, .summary {
             border-radius: 6px;
             padding: 10px 12px;
         }
@@ -106,9 +103,11 @@
             text-align: center;
         }
 
-        .penalty-section label {
-            display: block;
-            margin: 3px 0;
+        .strike-boxes {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
         }
 
         .summary {
@@ -150,7 +149,6 @@
 <h1>Kalkulator punktacji – C++ Asystent Zdrowego Stylu Życia</h1>
 
 <main>
-    <!-- LEWA STRONA -->
     <div class="table-wrapper">
         <table id="pointsTable">
             <tr><th>Kategoria</th><th>Wymagania (każdy = 1 pkt)</th></tr>
@@ -206,12 +204,16 @@
         </table>
     </div>
 
-    <!-- PRAWA STRONA -->
     <div class="side-panel">
         <div class="penalty-section">
-            <h3>Punkty ujemne (max −2)</h3>
+            <h3>Punkty ujemne</h3>
             <label><input type="checkbox" class="penalty" /> Kod nieczytelny / chaotyczny (−1)</label>
-            <label><input type="checkbox" class="penalty" /> Brak komentarzy / nieumiejętność wyjaśnienia (−1)</label>
+
+            <div class="strike-boxes">
+                <label><input type="checkbox" class="strike" /> Strike 1</label>
+                <label><input type="checkbox" class="strike" /> Strike 2</label>
+                <label><input type="checkbox" class="strike" /> Strike 3</label>
+            </div>
         </div>
 
         <div class="summary">
@@ -228,13 +230,29 @@
     const allBoxes = document.querySelectorAll("input[type='checkbox']");
     const scoreEl = document.getElementById("totalScore");
     const resetBtn = document.getElementById("resetForm");
+    const strikeBoxes = document.querySelectorAll(".strike");
+
+    function calculateStrikePenalty(count) {
+        if (count === 1) return 2;
+        if (count === 2) return 10;
+        if (count === 3) return 20;
+        return 0;
+    }
 
     function updateLiveScore() {
-        const positives = document.querySelectorAll("input[type='checkbox']:not(.penalty)");
+        const positives = document.querySelectorAll("input[type='checkbox']:not(.penalty):not(.strike)");
         const penalties = document.querySelectorAll(".penalty");
-        let total = 0, minus = 0;
+
+        let total = 0;
         positives.forEach(c => total += c.checked ? 1 : 0);
+
+        let minus = 0;
         penalties.forEach(p => minus += p.checked ? 1 : 0);
+
+        let strikeCount = 0;
+        strikeBoxes.forEach(s => strikeCount += s.checked ? 1 : 0);
+
+        minus += calculateStrikePenalty(strikeCount);
         const final = Math.max(total - minus, 0);
         scoreEl.innerText = `Suma punktów: ${final} / 25 (−${minus} pkt)`;
         unsavedChanges = true;
@@ -261,21 +279,30 @@
         const penalties = document.querySelectorAll(".penalty");
         let minus = 0;
         penalties.forEach(p => minus += p.checked ? 1 : 0);
+
+        let strikeCount = 0;
+        strikeBoxes.forEach(s => strikeCount += s.checked ? 1 : 0);
+        const strikePenalty = calculateStrikePenalty(strikeCount);
+        minus += strikePenalty;
+
         if (minus > 0) {
             output += "**Punkty ujemne:**\n";
             penalties.forEach(p => {
                 if (p.checked) output += `−1 ${p.parentElement.textContent.trim()}\n`;
             });
+            if (strikeCount > 0)
+                output += `−${strikePenalty} (${strikeCount} × strike)\n`;
             output += "\n";
         }
         output += scoreEl.innerText;
 
-        navigator.clipboard.writeText(output)
+        navigator.clipboard
+            .writeText(output)
             .then(() => alert("✔ Raport skopiowany – wklej do Teams (Ctrl+V)."))
             .catch(() => alert("❌ Nie udało się skopiować."));
     });
 
-    // RESET FORMULARZA
+    // Reset formularza
     resetBtn.addEventListener("click", () => {
         if (confirm("Czy na pewno chcesz zresetować formularz?")) {
             allBoxes.forEach(cb => (cb.checked = false));
@@ -284,9 +311,9 @@
         }
     });
 
-    // BLOKADA PRZED RELOADEM
+    // Ostrzeżenie przy zamknięciu okna
     let unsavedChanges = false;
-    window.addEventListener("beforeunload", (e) => {
+    window.addEventListener("beforeunload", e => {
         if (unsavedChanges) {
             e.preventDefault();
             e.returnValue = "";

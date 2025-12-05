@@ -341,13 +341,15 @@
         updateTimerDisplay();
     }
 
-    // Reset formularza i start licznika
+    // Reset formularza i start licznika (z potwierdzeniem)
     let unsavedChanges = false;
     resetBtn.addEventListener("click", () => {
-        document.querySelectorAll("input[type='checkbox']").forEach(cb => cb.checked = false);
-        updateLiveScore();
-        startTimer();
-        unsavedChanges = false;
+        if (confirm("Czy na pewno chcesz zresetować formularz?")) {
+            document.querySelectorAll("input[type='checkbox']").forEach(cb => cb.checked = false);
+            updateLiveScore();
+            startTimer();
+            unsavedChanges = false;
+        }
     });
 
     // Ostrzeżenie o niezapisanych zmianach
